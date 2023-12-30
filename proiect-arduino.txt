@@ -1,0 +1,254 @@
+Titlu: Sistem anti-furt cu alarma
+
+Descrierea: In zilele noastre aven nevoie ca sisteme anti-furt sa fie cat mai eficiente si cat mai greu spre imposibil de pacalit.Astfel acest sistem foloseste un senzor cu presiune si cu rezistenta variabila care poate fi folosit pentru a detecta o forta de apasare cuprinsa intre 100g si 10kg. Pe acesta se aseaza obiectul de valoare si i se inregistreaza presiunea.Cand obiectul este atins si presiunea se modfica un sistem de alarma prin sunet este pornit si vizual printr-un led. In fiecare moment vom aveam presiunea senzorului afisata pe un ecran led. Pentru a oprii alarma un buton de reset trebuie apasat, aceasta nu se opreste daca punem obiectul la loc sau punem un alt obiect cu aceeasi presiune.
+
+Domeniul: In securizarea obiectelor
+
+Avantaje: Destul de dificil de pacalit,
+
+
+
+1.pornesc LCD si scriu starea sistemului: dezarmat
+2.introuduc parola pe keypad pentru a arma sistemul 
+3.LDC stare sistem: armat si pot afisa val senzor de presiune si ca e totul OK
+
+3.5.pot pune un senzor de distanta si cand detecteaza miscare aprind led
+
+4.daca ridic obiectul de pe senzorul de presiune => activez buzzer (si un led )
+5.apas butonul de reset si asez obiectul la loc si totul revine led stins si buzzer oprit / pot lua un rfid si scanez cardul: daca e valid resetez tot (in loc de buton)
+
+
+
+
+
+#include <SPI.h>
+
+#include <TFT.h>
+
+#define cs 10
+#define dc 9
+#define rst 8
+
+TFT TFTscren=TFT(cs,dc,rst);
+
+const int fsrPin = A0;
+const int buttonPin = 2;
+const int ledPin = 6;
+const int buzzer = 4;
+
+const int numChars = 4;
+char password[numChars] = {'1', '2', '3', '4'};
+char enteredPassword[numChars];
+
+boolean systemArmed = false;
+
+void setup()
+{
+    Serial.begin(9600);
+  TFTscren.begin();
+  TFTscren.background(0,0,0);
+  TFTscren.stroke(255,255,255);
+  TFTscren.setTextSize(2);
+
+  TFTscren.text("Sistem Dezactivat!",10,60);
+
+    pinMode(fsrPin, INPUT);
+    pinMode(buttonPin, INPUT_PULLUP);
+    pinMode(ledPin, OUTPUT);
+    pinMode(buzzer, OUTPUT);
+}
+
+void loop()
+{
+        // Verifică presiunea cu senzorul FSR
+        int fsrValue = analogRead(fsrPin);
+        Serial.print("Valoare FSR: ");
+        Serial.println(fsrValue);
+        if (fsrValue < 300)
+        {
+            activateAlarm();
+        }
+
+        // Verifică apăsarea butonului
+        if (digitalRead(buttonPin) == HIGH)
+        {
+            deactivateAlarm();
+        }
+}
+
+void activateAlarm()
+{
+    digitalWrite(ledPin, HIGH);
+    tone(buzzer,1050);
+
+  TFTscren.text("ALERTA!",10,60);
+}
+
+void deactivateAlarm()
+{
+    digitalWrite(ledPin, LOW);
+    noTone(buzzer);
+    systemArmed = false;
+
+  TFTscren.text("Sistem Dezactivat!",10,60);
+}
+
+
+
+
+
+
+
+
+
+
+
+//TO DO: mai am de legat keypad si de facut logica butonului si a keypadului, de incercat sa nu mai flicare ecranul, incerc sa fac ledul sa palpaie, de facut 8 fire din mama in tata pt keypad
+
+
+#include <SPI.h>
+
+#include <TFT.h>
+#include <Keypad.h>
+
+#define cs 10
+#define dc 9
+#define rst 8
+
+TFT TFTscren = TFT(cs, dc, rst);
+
+const int fsrPin = A0;
+const int buttonPin = 2;
+const int ledPin = 6;
+const int buzzer = 4;
+
+const int numChars = 4;
+char password[numChars] = { '2', '2', '3', '3' };
+char enteredPassword[numChars];
+
+boolean systemArmed = false;
+
+const byte ROW_NUM = 4; // Patru rânduri pentru keypad
+const byte COLUMN_NUM = 4; // Patru coloane pentru keypad
+
+char keys[4][4] = {
+    {'1', '2', '3', 'A'},
+    {'4', '5', '6', 'B'},
+    {'7', '8', '9', 'C'},
+    {'*', '0', '#', 'D'}};
+
+byte pin_rows[ROW_NUM] = {9, 8, 7, 6};    // Conectează pinii la rândurile tastaturii
+byte pin_column[COLUMN_NUM] = {5, 4, 3, 2}; // Conectează pinii la coloanele tastaturii
+Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
+
+void setup() {
+  Serial.begin(9600);
+  TFTscren.begin();
+  TFTscren.background(0, 0, 0);
+  TFTscren.stroke(255, 255, 255);
+  TFTscren.setTextSize(2);
+
+  TFTscren.text("Parola:", 10, 60);
+
+  pinMode(fsrPin, INPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+}
+
+void loop() {
+
+  if (!systemArmed) {
+    char key = keypad.getKey();
+    Serial.println(key);
+    if (key) {
+      if (key == '#') {
+        if (checkPassword()) {
+          systemArmed = true;
+          TFTscren.background(0, 0, 0);
+          TFTscren.stroke(255, 255, 255);
+          TFTscren.setTextSize(2);
+          TFTscren.text("Sistem Activat", 10, 60);
+        } else {
+          TFTscren.background(0, 0, 0);
+          TFTscren.stroke(255, 255, 255);
+          TFTscren.setTextSize(2);
+          TFTscren.text("Parola Gresita", 10, 60);
+          delay(2000);
+          TFTscren.background(0, 0, 0);
+          TFTscren.stroke(255, 255, 255);
+          TFTscren.setTextSize(2);
+          TFTscren.text("Sistem Dezactivat", 10, 60);
+        }
+        clearEnteredPassword();
+      } 
+      else {
+        addKeyToPassword(key);
+      }
+    }
+  } 
+  else {
+    // Verifică presiunea cu senzorul FSR
+    int fsrValue = analogRead(fsrPin);
+    if (fsrValue < 1000) {
+      activateAlarm();
+    }
+
+    // Verifică apăsarea butonului
+    if (digitalRead(buttonPin) == HIGH) {
+      deactivateAlarm();
+    }
+  }
+  delay(10);
+}
+
+void activateAlarm() {
+  digitalWrite(ledPin, HIGH);
+  tone(buzzer, 1050);
+
+  TFTscren.background(0, 0, 0);
+  TFTscren.stroke(255, 255, 255);
+  TFTscren.setTextSize(2);
+  TFTscren.text("ALERTA!", 10, 60);
+
+  for (int i = 0; i < 5; ++i) {
+    digitalWrite(ledPin, HIGH);
+    delay(250);  // Stare HIGH pentru 250 ms
+    digitalWrite(ledPin, LOW);
+    delay(250);  // Stare LOW pentru 250 ms
+  }
+}
+
+void deactivateAlarm() {
+  digitalWrite(ledPin, LOW);
+  noTone(buzzer);
+  systemArmed = false;
+
+  TFTscren.background(0, 0, 0);
+  TFTscren.stroke(255, 255, 255);
+  TFTscren.setTextSize(2);
+  TFTscren.text("Sistem Dezactivat!", 10, 60);
+}
+
+void addKeyToPassword(char key) {
+  static byte index = 0;
+  if (index < numChars - 1) {
+    enteredPassword[index] = key;
+    index++;
+  }
+}
+
+void clearEnteredPassword() {
+  for (byte i = 0; i < numChars; i++) {
+    enteredPassword[i] = 0;
+  }
+}
+
+boolean checkPassword() {
+  for (byte i = 0; i < numChars; i++) {
+    if (enteredPassword[i] != password[i]) {
+      return false;
+    }
+  }
+  return true;
+}
