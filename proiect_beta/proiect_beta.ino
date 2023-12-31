@@ -15,6 +15,7 @@ const int fsrPin = A0;
 const int buttonPin = 2;
 const int ledPin = 6;
 const int buzzer = 4;
+const int pirPin = 7;
 
 const int numChars = 4;
 char password[numChars] = { '1', '2', '3', '4' };
@@ -37,11 +38,13 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
   pinMode(buzzer, OUTPUT);
+  pinMode(pirPin, INPUT);
 }
 
 void loop() {
   // Verifică presiunea cu senzorul FSR
   int fsrValue = analogRead(fsrPin);
+  boolean motionDetected = digitalRead(pirPin);
   Serial.print("Valoare FSR: ");
   Serial.println(fsrValue);
   if (systemArmed == true) {
@@ -53,7 +56,18 @@ void loop() {
       TFTscren.text("Sistem activat!", 10, 60);
     }
 
-    if (fsrValue < 300 || alarm==true) {
+    if (motionDetected == true) {
+
+      for (int i = 0; i < 5; ++i) {
+        digitalWrite(ledPin, HIGH);
+        delay(250);  // Stare HIGH pentru 250 ms
+        digitalWrite(ledPin, LOW);
+        delay(250);  // Stare LOW pentru 250 ms
+      }
+      TFTscren.text("Miscare", 30, 30);
+    }
+
+    if (fsrValue < 300 || alarm == true) {
       activateAlarm();
     }
 
@@ -74,13 +88,6 @@ void activateAlarm() {
   TFTscren.stroke(255, 255, 255);
   TFTscren.setTextSize(2);
   TFTscren.text("ALERTA!", 10, 60);
-
-  for (int i = 0; i < 5; ++i) {
-    digitalWrite(ledPin, HIGH);
-    delay(250);  // Stare HIGH pentru 250 ms
-    digitalWrite(ledPin, LOW);
-    delay(250);  // Stare LOW pentru 250 ms
-  }
 }
 
 void deactivateAlarm() {
