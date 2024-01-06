@@ -22,7 +22,7 @@ const int buzzer = 4;
 const int pirPin = 7;
 
 
-bool systemArmed = true;
+bool systemArmed = false;
 
 bool alarm = false;
 
@@ -35,8 +35,8 @@ void setup() {
   TFTscren.background(0, 0, 0);
   TFTscren.stroke(255, 255, 255);
   TFTscren.setTextSize(2);
-  TFTscren.text("Sistem", 10, 15);
-  TFTscren.text("activat!", 60, 30);
+  TFTscren.text("Sistem", 10, 35);
+  TFTscren.text("dezactivat!", 30, 60);
 
   pinMode(fsrPin, INPUT);
   pinMode(buttonPin, INPUT_PULLUP);
@@ -52,7 +52,11 @@ void loop() {
   Serial.print("Valoare FSR: ");
   Serial.println(fsrValue);
 
-  
+  if (digitalRead(buttonPin) == HIGH && alarm==false) {
+    systemArmed = !systemArmed;
+  }
+  delay(500);
+
   if (systemArmed == true) {
 
     if (alarm == false) {
@@ -125,6 +129,13 @@ void loop() {
     }
 
     delay(200);
+  } else {
+    TFTscren.background(0, 0, 0);
+    TFTscren.stroke(255, 255, 255);
+    TFTscren.setTextSize(2);
+    TFTscren.text("Sistem", 10, 35);
+    TFTscren.text("dezactivat!", 30, 60);
+    delay(500);
   }
 }
 
@@ -136,9 +147,9 @@ void activateAlarm() {
   TFTscren.background(0, 0, 0);
   TFTscren.stroke(0, 255, 0);
   TFTscren.setTextSize(2);
-  TFTscren.text("ALERTA!", 40, 40);
+  TFTscren.text("ALERTA!", 40, 30);
   TFTscren.stroke(255, 255, 255);
-  TFTscren.line(0, 65, 160, 65);
+  TFTscren.line(0, 50, 160, 50);
 }
 
 void deactivateAlarm() {
